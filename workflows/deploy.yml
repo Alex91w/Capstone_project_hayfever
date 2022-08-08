@@ -1,0 +1,32 @@
+name: Weather API test
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  deploy-infrastructure:
+    runs-on: ubuntu-latest
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+      AWS_REGION: us-west-2
+    steps:
+      - uses: actions/checkout@v3
+      - uses: hashicorp/setup-terraform@v2
+      # Create bucket because sandbox maybe destroyed bucket
+      - name: Setup Terraform state bucket
+        run: |
+          cd infrastructure
+          sh setup_terraform_state_bucket.sh
+      - name: Build Source Code
+        run: |
+          cd src
+          sh build_source_code.sh
+      - name: Deploy with Terraform
+        run: |
+          cd infrastructure
+          terraform init
+          terraform apply -auto-approve
